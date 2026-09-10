@@ -43,3 +43,10 @@ python app.py
 
 ## License
 For educational purposes.
+
+## our Team
+    - priyaranjan
+    - khirodprasad
+    - biswajitbehera
+    - aurojit
+    - sashikanta
