@@ -47,6 +47,6 @@ For educational purposes.
 ## our Team
     - Priyaranjan
     - Khirodprasad
-    - Biswajitbehera
+    - Biswajit
     - Aurojit
     - Sashikanta
