@@ -45,8 +45,8 @@ python app.py
 For educational purposes.
 
 ## our Team
-    - priyaranjan
-    - khirodprasad
-    - biswajitbehera
-    - aurojit
-    - sashikanta
+    - Priyaranjan
+    - Khirodprasad
+    - Biswajitbehera
+    - Aurojit
+    - Sashikanta
