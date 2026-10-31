@@ -1,52 +1,14 @@
-# Hotel Management System
+# StayGrid Hotel Management System
 
-## About
-A simple **Hotel Management System** designed to manage customers, rooms, bookings, staff, and payments.
+StayGrid is a hotel discovery and reservation project. The backend provides a FastAPI application with SQLite persistence, account registration and login, hotel search, room availability, customer bookings and cancellations, and administrator management for hotels, rooms, and bookings.
 
-## Goal
-To develop an easy-to-use system that simplifies hotel management and reduces manual work.
+## Backend
 
-## Features
-- Customer management
-- Room management
-- Room booking
-- Staff management
-- Payment management
-- Check-in and check-out
+See [backend/README.md](backend/README.md) for setup, administrator provisioning, the complete API endpoint list, response examples, and Swagger UI instructions.
 
-## Technologies
-- HTML
-- CSS
-- JavaScript
-- Python
-- Database
+From the `backend` directory, install dependencies with `uv sync` and run the API with `uv run fastapi dev main.py`. Swagger UI is available at `http://127.0.0.1:8000/docs`.
 
-## Main Modules
-- Login
-- Dashboard
-- Customer
-- Rooms
-- Booking
-- Staff
-- Payment
+## Project layout
 
-## How to Run
-
-```bash
-git clone https://github.com/yourusername/hotel-management-system.git
-cd hotel-management-system
-python app.py
-```
-
-## Author
-**Your Name**
-
-## License
-For educational purposes.
-
-## our Team
-    - Priyaranjan
-    - Khirodprasad
-    - Biswajit
-    - Aurojit
-    - Sashikanta
+- `backend/` - FastAPI application and database
+- `frontend/` - Vite and React frontend

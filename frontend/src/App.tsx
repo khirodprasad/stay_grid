@@ -1,122 +1,31 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import './App.css'
 
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1'
+type Hotel = { id:number; name:string; city:string; country:string; address:string; description:string; rating:number; amenities:string }
+type Room = { room_id?:number; id?:number; hotel_id:number; hotel_name?:string; room_number:string; room_type:string; capacity:number; price:number; nightly_price?:number; floor:number }
+type Booking = { id:number; hotel_name:string; room_number:string; check_in:string; check_out:string; guests:number; total_amount:number; status:string }
+
+async function request(path:string, options:RequestInit = {}) { const token=localStorage.getItem('staygrid_token'); const headers=new Headers(options.headers); if(options.body)headers.set('Content-Type','application/json'); if(token)headers.set('Authorization',`Bearer ${token}`); const r=await fetch(`${API}${path}`,{...options,headers}); const d=await r.json().catch(()=>({})); if(!r.ok)throw new Error(d.detail||'Something went wrong'); return d }
+
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const [hotels,setHotels]=useState<Hotel[]>([]),[rooms,setRooms]=useState<Room[]>([]),[bookings,setBookings]=useState<Booking[]>([])
+  const [query,setQuery]=useState(''),[city,setCity]=useState(''),[checkIn,setCheckIn]=useState(''),[checkOut,setCheckOut]=useState(''),[guests,setGuests]=useState(2)
+  const [tab,setTab]=useState<'explore'|'bookings'|'admin'>('explore'),[user,setUser]=useState<any>(null),[modal,setModal]=useState<'login'|'register'|'booking'|null>(null),[selected,setSelected]=useState<Room|null>(null),[message,setMessage]=useState('')
+  const [hotelForm,setHotelForm]=useState({name:'',description:'',address:'',city:'',country:'',contact:'',rating:'4.5',amenities:'wifi,breakfast'})
+  const loadHotels=async()=>{try{setHotels((await request(`/hotels?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}`)).items)}catch(e:any){setMessage(e.message)}}
+  const loadBookings=async()=>{try{setBookings((await request('/bookings')).items)}catch(e:any){setMessage(e.message)}}
+  useEffect(()=>{loadHotels();const t=localStorage.getItem('staygrid_token');if(t)request('/auth/me').then(setUser).catch(()=>localStorage.removeItem('staygrid_token'))},[])
+  useEffect(()=>{if((tab==='bookings'||tab==='admin')&&user)loadBookings()},[tab,user])
+  const search=async(e:FormEvent)=>{e.preventDefault();await loadHotels();if(checkIn&&checkOut)try{setRooms((await request(`/rooms/availability?check_in=${checkIn}&check_out=${checkOut}&guests=${guests}`)).rooms)}catch(e:any){setMessage(e.message)}}
+  const auth=async(e:FormEvent<HTMLFormElement>,kind:'login'|'register')=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.currentTarget));try{let r=await request(`/auth/${kind}`,{method:'POST',body:JSON.stringify(d)});if(kind==='register'){r=await request('/auth/login',{method:'POST',body:JSON.stringify({email:d.email,password:d.password})});setMessage('Account created. You are now signed in.')}localStorage.setItem('staygrid_token',r.access_token);setUser(r.user);setModal(null)}catch(e:any){setMessage(e.message)}}
+  const book=async(e:FormEvent)=>{e.preventDefault();if(!selected)return;try{await request('/bookings',{method:'POST',body:JSON.stringify({room_id:selected.room_id||selected.id,check_in:checkIn,check_out:checkOut,guests})});setModal(null);setTab('bookings');setMessage('Your stay is confirmed.')}catch(e:any){setMessage(e.message)}}
+  const createHotel=async(e:FormEvent)=>{e.preventDefault();try{await request('/admin/hotels',{method:'POST',body:JSON.stringify({...hotelForm,rating:Number(hotelForm.rating)})});setHotelForm({name:'',description:'',address:'',city:'',country:'',contact:'',rating:'4.5',amenities:'wifi,breakfast'});await loadHotels();setMessage('Hotel created successfully.')}catch(e:any){setMessage(e.message)}}
+  return <div className="app-shell"><header className="topbar"><button className="brand" onClick={()=>setTab('explore')}><b>⌂</b><span>Stay<span>Grid</span><small>HOTELS · HOMES · MEMORIES</small></span></button><nav><button className={tab==='explore'?'active':''} onClick={()=>setTab('explore')}>Explore</button>{user&&<button className={tab==='bookings'?'active':''} onClick={()=>setTab('bookings')}>My bookings</button>}{user?.role==='admin'&&<button className={tab==='admin'?'active':''} onClick={()=>setTab('admin')}>Admin</button>}</nav><div>{user?<><span className="avatar">{user.name[0]}</span><button className="link" onClick={()=>{localStorage.removeItem('staygrid_token');setUser(null)}}>Sign out</button></>:<><button className="link" onClick={()=>setModal('login')}>Sign in</button><button className="gold small" onClick={()=>setModal('register')}>Join StayGrid</button></>}</div></header>{message&&<div className="toast" onClick={()=>setMessage('')}>{message} ×</div>}
+  {tab==='explore'&&<><section className="hero"><div><p className="eyebrow">YOUR NEXT ESCAPE, ELEVATED</p><h1>Find your perfect<br/><em>place to stay.</em></h1><p className="hero-text">Handpicked hotels, homes, and hidden gems for trips you’ll remember.</p></div><div className="hero-art"><div className="sun"/><div className="mountain"/><div className="villa">⌂</div></div><form className="search" onSubmit={search}><label>Destination<input value={city} onChange={e=>setCity(e.target.value)} placeholder="Where are you going?"/></label><label>Check in<input type="date" value={checkIn} onChange={e=>setCheckIn(e.target.value)}/></label><label>Check out<input type="date" value={checkOut} onChange={e=>setCheckOut(e.target.value)}/></label><label>Guests<select value={guests} onChange={e=>setGuests(+e.target.value)}><option>1</option><option>2</option><option>3</option><option>4</option></select></label><button className="search-button">Search stays →</button></form></section><main className="content"><div className="heading"><div><p className="eyebrow">CURATED FOR YOU</p><h2>Popular stays</h2></div><input className="hotel-search" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&loadHotels()} placeholder="⌕  Search hotels..."/></div><div className="hotel-grid">{hotels.length?hotels.map(h=><article className="hotel-card" key={h.id}><div className="hotel-image"><span>{h.name[0]}</span><b>★ {h.rating.toFixed(1)}</b></div><div className="hotel-info"><div><h3>{h.name}</h3><p>{h.city}, {h.country}</p></div><small>{h.amenities?.split(',')[0]||'Comfort'} · highly rated</small><button className="outline" onClick={async()=>{const d=await request(`/hotels/${h.id}`);setRooms(d.rooms.map((r:any)=>({...r,hotel_id:h.id,hotel_name:h.name,price:r.price||r.nightly_price})));setMessage(`${h.name} rooms loaded`)}}>View rooms</button></div></article>):<div className="empty"><h3>No stays yet</h3><p>Use the admin account to add your first hotel.</p></div>}</div>{rooms.length>0&&<section className="rooms"><p className="eyebrow">AVAILABLE ROOMS</p><h2>Choose your room</h2>{rooms.map(r=><div className="room" key={r.room_id||r.id}><div><b>{r.room_type}</b><span>Room {r.room_number} · Floor {r.floor} · Sleeps {r.capacity}</span></div><strong>₹{(r.price||r.nightly_price||0).toFixed(0)} <small>/ night</small></strong><button className="gold" onClick={()=>user?(setSelected(r),setModal('booking')):setModal('login')}>Reserve</button></div>)}</section>}</main></>}
+  {tab==='bookings'&&<main className="content page"><p className="eyebrow">YOUR STAYS</p><h1>My bookings</h1>{bookings.length?bookings.map(b=><div className="booking" key={b.id}><div className="booking-icon">⌂</div><div><h3>{b.hotel_name}</h3><p>Room {b.room_number} · {b.check_in} → {b.check_out} · {b.guests} guests</p></div><div><span className={`status ${b.status}`}>{b.status}</span><strong>₹{b.total_amount.toFixed(0)}</strong></div></div>):<div className="empty"><h3>Your next memory starts here</h3><button className="gold" onClick={()=>setTab('explore')}>Explore stays</button></div>}</main>}
+  {tab==='admin'&&<main className="content page"><p className="eyebrow">MANAGE STAYGRID</p><h1>Admin dashboard</h1><div className="admin-grid"><div className="stat"><span>Hotels</span><strong>{hotels.length}</strong><small>Active listings</small></div><div className="stat"><span>Bookings</span><strong>{bookings.length}</strong><small>Reservations</small></div><div className="admin-note"><h3>Manage your inventory</h3><p>Create and update hotels, room types, rooms, and booking statuses from the API console.</p><a href="http://127.0.0.1:8000/docs" target="_blank">Open API console →</a></div></div><section className="admin-form"><div><p className="eyebrow">NEW LISTING</p><h2>Add a hotel</h2><p className="form-help">Publish a hotel for guests to discover and book.</p></div><form onSubmit={createHotel}><div className="form-grid"><input required placeholder="Hotel name" value={hotelForm.name} onChange={e=>setHotelForm({...hotelForm,name:e.target.value})}/><input required placeholder="City" value={hotelForm.city} onChange={e=>setHotelForm({...hotelForm,city:e.target.value})}/><input required placeholder="Address" value={hotelForm.address} onChange={e=>setHotelForm({...hotelForm,address:e.target.value})}/><input placeholder="Country" value={hotelForm.country} onChange={e=>setHotelForm({...hotelForm,country:e.target.value})}/><input placeholder="Contact" value={hotelForm.contact} onChange={e=>setHotelForm({...hotelForm,contact:e.target.value})}/><input type="number" min="0" max="5" step="0.1" placeholder="Rating" value={hotelForm.rating} onChange={e=>setHotelForm({...hotelForm,rating:e.target.value})}/></div><textarea required placeholder="Short description" value={hotelForm.description} onChange={e=>setHotelForm({...hotelForm,description:e.target.value})}/><input placeholder="Amenities, separated by commas" value={hotelForm.amenities} onChange={e=>setHotelForm({...hotelForm,amenities:e.target.value})}/><button className="gold" type="submit">Create hotel →</button></form></section></main>}
+  {modal&&<div className="backdrop" onClick={()=>setModal(null)}><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setModal(null)}>×</button>{modal==='booking'?<><p className="eyebrow">CONFIRM YOUR STAY</p><h2>Reserve {selected?.room_type}</h2><p>{checkIn} → {checkOut} · {guests} guests</p><form onSubmit={book}><button className="gold full">Confirm reservation</button></form></>:<><p className="eyebrow">{modal==='login'?'WELCOME BACK':'JOIN THE GRID'}</p><h2>{modal==='login'?'Sign in':'Create your account'}</h2><form onSubmit={e=>auth(e,modal)}>{modal==='register'&&<input name="name" placeholder="Full name" required/>}<input name="email" type="email" placeholder="Email address" required/><input name="password" type="password" placeholder="Password" minLength={8} required/><button className="gold full">{modal==='login'?'Sign in':'Create account'}</button></form><button className="switch" onClick={()=>setModal(modal==='login'?'register':'login')}>{modal==='login'?'Need an account? Join us':'Already have an account? Sign in'}</button></>}</div></div>}</div>
 }
-
 export default App
