@@ -2,7 +2,7 @@
 
 ## Overview
 
-StayGrid is a hotel discovery and reservation system with a React/Vite frontend and a FastAPI/SQLite backend.
+StayGrid is a hotel discovery and reservation system with a React/Vite frontend and a FastAPI/MySQL backend.
 
 ## Project structure
 
@@ -12,7 +12,7 @@ StayGrid is a hotel discovery and reservation system with a React/Vite frontend 
 - `backend/` - FastAPI application.
 - `backend/app/api/routes/` - Authentication, hotel, room, booking, and admin routes.
 - `backend/app/schemas.py` - Request validation models.
-- `backend/app/db/database.py` - SQLite connection and schema initialization.
+- `backend/app/db/database.py` - MySQL connection and schema initialization.
 - `backend/app/core/security.py` - Password hashing and access tokens.
 
 ## Local setup
@@ -56,8 +56,10 @@ All application endpoints use the `/api/v1` prefix. Admin routes require an acco
 
 - `ADMIN_EMAIL` and `ADMIN_PASSWORD` provision the first local admin account.
 - `TOKEN_SECRET` signs access tokens and should be changed outside development.
-- `DATABASE_PATH` selects a different SQLite database file.
+- `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` configure MySQL.
 - `VITE_API_URL` changes the frontend API base URL.
+
+Backend environment values are stored in `backend/.env`; use `backend/.env.example` as the template. The real `.env` file is ignored by Git.
 
 ## Verification
 
