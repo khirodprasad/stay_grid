@@ -1,6 +1,6 @@
 # StayGrid Ticket Development Phases
 
-This plan breaks a StayGrid feature ticket into reviewable phases. Copy the checklist into a ticket and mark each item when complete.
+This plan breaks a StayGrid feature ticket into reviewable phases. Copy the checklist into a ticket and mark each item when complete. The production database target is MySQL.
 
 ## Functional requirements
 
