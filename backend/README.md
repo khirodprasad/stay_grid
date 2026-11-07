@@ -1,12 +1,29 @@
 # StayGrid API
 
-FastAPI backend for hotel search, room availability, reservations, and administrator management. The API uses SQLite by default and publishes interactive API documentation at `/docs`.
+FastAPI backend for hotel search, room availability, reservations, and administrator management. The API uses MySQL and publishes interactive API documentation at `/docs`.
 
 ## Run locally
 
 From this directory, install the project with `uv sync` and start the development server with `uv run fastapi dev main.py`. The API listens at `http://127.0.0.1:8000`.
 
-SQLite is stored in `staygrid.db` by default. Set `DATABASE_PATH` to use another file. Before deployment, set a long, random `TOKEN_SECRET`. Access tokens last one hour by default; set `TOKEN_TTL_SECONDS` to change that.
+The backend loads these settings from `backend/.env` using `python-dotenv`: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` (defaults: `127.0.0.1`, `3306`, `root`, empty password, and `staygrid`). The database is created automatically when the MySQL user has permission to create databases. Copy `.env.example` to `.env` and use private values outside local development. Before deployment, set a long, random `TOKEN_SECRET`. Access tokens last one hour by default; set `TOKEN_TTL_SECONDS` to change that.
+
+Create a MySQL user/database manually when automatic creation is not permitted:
+
+```sql
+CREATE DATABASE staygrid CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'staygrid'@'localhost' IDENTIFIED BY 'change-this-password';
+GRANT ALL PRIVILEGES ON staygrid.* TO 'staygrid'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Then configure the backend before startup:
+
+```powershell
+$env:MYSQL_USER="staygrid"
+$env:MYSQL_PASSWORD="change-this-password"
+$env:MYSQL_DATABASE="staygrid"
+```
 
 To provision the first administrator, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before the first startup. The account is created once if that email is not already registered. Public registration always creates a customer account. Do not use a default or shared administrator password.
 

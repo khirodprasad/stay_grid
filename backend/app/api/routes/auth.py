@@ -17,7 +17,7 @@ def register(payload: RegisterInput, db=Depends(get_db)):
 
 @router.post("/login", summary="Log in and receive a bearer token")
 def login(payload: LoginInput, db=Depends(get_db)):
-    user = db.execute("SELECT * FROM users WHERE email=? COLLATE NOCASE", (payload.email,)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE email=?", (payload.email,)).fetchone()
     if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
     return {"access_token": create_access_token(user["id"], user["role"]), "token_type": "bearer",

@@ -42,6 +42,8 @@ The frontend uses `VITE_API_URL` when set. Otherwise it uses `http://127.0.0.1:8
 
 ## Main API capabilities
 
+See [CATEGORY_CATALOG.md](CATEGORY_CATALOG.md) for the complete functional category list and remaining TODO areas.
+
 - Customer registration, login, and current-user profile.
 - Hotel listing, search, and details.
 - Room details and date-based availability.

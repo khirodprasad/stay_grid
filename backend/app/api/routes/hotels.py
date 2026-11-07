@@ -19,9 +19,9 @@ def list_hotels(city: str | None = None, q: str | None = None,
         raise HTTPException(422, "Dates must be valid and check_in cannot be in the past")
     clauses, params = ["h.is_active=1"], []
     if city:
-        clauses.append("h.city LIKE ? COLLATE NOCASE"); params.append(f"%{city}%")
+        clauses.append("h.city LIKE ?"); params.append(f"%{city}%")
     if q:
-        clauses.append("(h.name LIKE ? OR h.description LIKE ? OR h.city LIKE ?) COLLATE NOCASE")
+        clauses.append("(h.name LIKE ? OR h.description LIKE ? OR h.city LIKE ?)")
         params.extend([f"%{q}%"] * 3)
     availability = ""
     if check_in and check_out:

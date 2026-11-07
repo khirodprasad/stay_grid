@@ -1,6 +1,6 @@
 # StayGrid Hotel Management System
 
-StayGrid is a hotel discovery and reservation project. The backend provides a FastAPI application with SQLite persistence, account registration and login, hotel search, room availability, customer bookings and cancellations, and administrator management for hotels, rooms, and bookings.
+StayGrid is a hotel discovery and reservation project. The backend provides a FastAPI application with MySQL persistence, account registration and login, hotel search, room availability, customer bookings and cancellations, and administrator management for hotels, rooms, and bookings.
 
 ## Backend
 
