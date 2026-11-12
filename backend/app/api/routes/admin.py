@@ -7,6 +7,22 @@ from app.schemas import HotelInput, RoomInput, RoomTypeInput
 router = APIRouter(dependencies=[Depends(admin_user)])
 
 
+@router.get("/hotel-admins", summary="List hotel administrator applications")
+def list_hotel_admins(db=Depends(get_db)):
+    rows = db.execute("SELECT id,name,email,business_name,phone,account_status,created_date,approved_at FROM users WHERE role='hotel_admin' ORDER BY created_date DESC").fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@router.patch("/users/{user_id}/status", summary="Approve, suspend, or block a user")
+def update_user_status(user_id: int, status: str, admin=Depends(admin_user), db=Depends(get_db)):
+    if status not in {"active", "suspended", "blocked"}:
+        raise HTTPException(422, "Invalid account status")
+    cursor = db.execute("UPDATE users SET account_status=?,approved_at=CASE WHEN ?='active' THEN NOW() ELSE approved_at END,approved_by=CASE WHEN ?='active' THEN ? ELSE approved_by END,updated_by=? WHERE id=?", (status, status, status, admin["id"], admin["id"], user_id))
+    if not cursor.rowcount:
+        raise HTTPException(404, "User not found")
+    return {"id": user_id, "account_status": status}
+
+
 @router.post("/hotels", status_code=201, summary="Create a hotel")
 def create_hotel(payload: HotelInput, db=Depends(get_db)):
     values = payload.model_dump()

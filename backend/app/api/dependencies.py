@@ -9,13 +9,21 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 def current_user(token: str = Depends(oauth2_scheme), db=Depends(get_db)):
     payload = decode_access_token(token)
-    user = db.execute("SELECT id,name,email,role FROM users WHERE id=?", (payload["sub"],)).fetchone()
+    user = db.execute("SELECT id,name,email,role,account_status,business_name,phone FROM users WHERE id=?", (payload["sub"],)).fetchone()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account no longer exists")
+    if user["account_status"] in {"blocked", "suspended"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This account is suspended or blocked")
     return dict(user)
 
 
-def admin_user(user=Depends(current_user)):
-    if user["role"] != "admin":
+def admin_user(user=Depends(current_user), db=Depends(get_db)):
+    if user["role"] != "admin" or user["account_status"] != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrator access required")
+    return user
+
+
+def hotel_admin_user(user=Depends(current_user)):
+    if user["role"] != "hotel_admin" or user["account_status"] != "active":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Approved hotel administrator access required")
     return user

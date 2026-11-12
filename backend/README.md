@@ -4,7 +4,7 @@ FastAPI backend for hotel search, room availability, reservations, and administr
 
 ## Run locally
 
-From this directory, install the project with `uv sync` and start the development server with `uv run fastapi dev main.py`. The API listens at `http://127.0.0.1:8000`.
+From this directory, install the project with `uv sync` and start the development server with `uv run uvicorn main:app --host 127.0.0.1 --port 8001`. The API listens at `http://127.0.0.1:8001`.
 
 The backend loads these settings from `backend/.env` using `python-dotenv`: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` (defaults: `127.0.0.1`, `3306`, `root`, empty password, and `staygrid`). The database is created automatically when the MySQL user has permission to create databases. Copy `.env.example` to `.env` and use private values outside local development. Before deployment, set a long, random `TOKEN_SECRET`. Access tokens last one hour by default; set `TOKEN_TTL_SECONDS` to change that.
 
@@ -29,7 +29,7 @@ To provision the first administrator, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` bef
 
 ## Swagger UI
 
-Open `http://127.0.0.1:8000/docs` after starting the server.
+Open `http://127.0.0.1:8001/docs` after starting the server.
 
 1. Call `POST /api/v1/auth/register` with `name`, `email`, and a password of at least eight characters.
 2. Call `POST /api/v1/auth/login` and copy `access_token` from the response.
@@ -47,6 +47,7 @@ All application routes are prefixed with `/api/v1`. Successful JSON responses ar
 | POST | `/auth/login` | Public | Access token and account |
 | GET | `/auth/me` | Customer or admin | Current account |
 | GET | `/hotels` | Public | Paginated hotel list; filters: `city`, `q`, `check_in`, `check_out`, `guests` |
+| GET | `/categories` | Public | MySQL-backed product categories with live counts |
 | GET | `/hotels/{hotel_id}` | Public | Hotel details and its rooms |
 | GET | `/rooms/availability` | Public | Available rooms for date range, guest count, and optional hotel |
 | GET | `/rooms/{room_id}` | Public | Room and hotel details |

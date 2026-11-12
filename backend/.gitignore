@@ -1,4 +1,6 @@
 .venv
+.venv-broken*/
+.venv-run/
 .env
 __pycache__/
 *.py[cod]

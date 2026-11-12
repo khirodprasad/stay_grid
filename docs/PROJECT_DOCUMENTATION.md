@@ -35,14 +35,14 @@ npm run dev -- --host 127.0.0.1 --port 5173
 Local URLs:
 
 - Frontend: http://127.0.0.1:5173/
-- API: http://127.0.0.1:8000/
-- Swagger UI: http://127.0.0.1:8000/docs
+- API: http://127.0.0.1:8001/
+- Swagger UI: http://127.0.0.1:8001/docs
 
 The frontend uses `VITE_API_URL` when set. Otherwise it uses `http://127.0.0.1:8000/api/v1`.
 
 ## Main API capabilities
 
-See [CATEGORY_CATALOG.md](CATEGORY_CATALOG.md) for the complete functional category list and remaining TODO areas.
+See [CATEGORY_CATALOG.md](CATEGORY_CATALOG.md) for the complete functional category list and remaining TODO areas. Category labels and descriptions are stored in the MySQL `categories` table and served through `GET /api/v1/categories`.
 
 - Customer registration, login, and current-user profile.
 - Hotel listing, search, and details.

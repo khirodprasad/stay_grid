@@ -17,6 +17,24 @@ class LoginInput(InputModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class AdminRegisterInput(RegisterInput):
+    admin_code: str = Field(min_length=4, max_length=128)
+
+
+class HotelAdminRegisterInput(RegisterInput):
+    business_name: str = Field(min_length=2, max_length=180)
+    phone: str = Field(min_length=7, max_length=40)
+
+
+class ForgotPasswordInput(InputModel):
+    email: EmailStr
+
+
+class ResetPasswordInput(InputModel):
+    token: str = Field(min_length=20, max_length=256)
+    password: str = Field(min_length=8, max_length=128)
+
+
 class HotelInput(InputModel):
     name: str = Field(min_length=2, max_length=160)
     description: str = Field(default="", max_length=4000)
