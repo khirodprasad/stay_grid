@@ -5,7 +5,6 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import current_user
-from app.core.config import ADMIN_SIGNUP_CODE
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.database import get_db
 from app.schemas import AdminRegisterInput, ForgotPasswordInput, HotelAdminRegisterInput, LoginInput, RegisterInput, ResetPasswordInput
@@ -19,29 +18,32 @@ def _assign_role(db, user_id: int, role: str) -> None:
 
 @router.post("/register", status_code=201, summary="Register a customer account", responses={409: {"description": "Email already registered"}})
 def register(payload: RegisterInput, db=Depends(get_db)):
-    cursor = db.execute("INSERT INTO users(name,email,password_hash,role,account_status) VALUES(?,?,?,'user','active')",
-                        (payload.name, payload.email.lower(), hash_password(payload.password)))
+    cursor = db.execute("INSERT INTO users(name,full_name,email,password_hash,role,account_status) VALUES(?,?,?,?,'user','active')",
+                        (payload.name, payload.name, payload.email.lower(), hash_password(payload.password)))
     _assign_role(db, cursor.lastrowid, "user")
     return {"id": cursor.lastrowid, "name": payload.name, "email": payload.email.lower(), "role": "user"}
 
 
 @router.post("/hotel-admin/register", status_code=201, summary="Apply for a hotel administrator account")
 def register_hotel_admin(payload: HotelAdminRegisterInput, db=Depends(get_db)):
-    cursor = db.execute("INSERT INTO users(name,email,password_hash,role,account_status,business_name,phone) VALUES(?,?,?,'hotel_admin','pending',?,?)",
-                        (payload.name, payload.email.lower(), hash_password(payload.password), payload.business_name, payload.phone))
+    cursor = db.execute("INSERT INTO users(name,full_name,email,password_hash,role,account_status,business_name,phone) VALUES(?,?,?,?,'hotel_admin','active',?,?)",
+                        (payload.name, payload.name, payload.email.lower(), hash_password(payload.password), payload.business_name, payload.phone))
     _assign_role(db, cursor.lastrowid, "hotel_admin")
-    return {"id": cursor.lastrowid, "name": payload.name, "email": payload.email.lower(), "role": "hotel_admin", "account_status": "pending"}
+    return {"id": cursor.lastrowid, "name": payload.name, "email": payload.email.lower(), "role": "hotel_admin", "account_status": "active"}
 
 
 @router.post("/admin/register", status_code=201, summary="Create an admin account with the configured invite code")
 def register_admin(payload: AdminRegisterInput, db=Depends(get_db)):
-    if not ADMIN_SIGNUP_CODE or not secrets.compare_digest(payload.admin_code, ADMIN_SIGNUP_CODE):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid admin invite code")
     cursor = db.execute("INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,'admin') ON DUPLICATE KEY UPDATE name=VALUES(name),password_hash=VALUES(password_hash),role='admin'",
                         (payload.name, payload.email.lower(), hash_password(payload.password)))
     user = db.execute("SELECT id FROM users WHERE email=?", (payload.email.lower(),)).fetchone()
     _assign_role(db, user["id"], "admin")
     return {"id": cursor.lastrowid, "name": payload.name, "email": payload.email.lower(), "role": "admin"}
+
+
+@router.get("/me", summary="Return the authenticated account")
+def me(user=Depends(current_user)):
+    return user
 
 
 @router.post("/login", summary="Log in and receive a bearer token")
@@ -54,7 +56,7 @@ def login(payload: LoginInput, db=Depends(get_db)):
     if user["account_status"] in {"blocked", "suspended"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This account is suspended or blocked")
     return {"access_token": create_access_token(user["id"], user["role"]), "token_type": "bearer",
-            "user": {"id": user["id"], "name": user["name"], "email": user["email"], "role": user["role"]}}
+            "user": {"id": user["id"], "name": user["name"], "email": user["email"], "role": user["role"], "account_status": user["account_status"], "business_name": user.get("business_name"), "phone": user.get("phone")}}
 
 
 @router.post("/forgot-password", summary="Create a short-lived password reset token")

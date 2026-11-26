@@ -1,0 +1,10 @@
+import { useEffect, useState } from 'react'
+
+type Props = { request: (path: string, options?: RequestInit) => Promise<any>; user: any; setMessage: (value: string) => void }
+
+export default function HotelAdminDashboard({ request, user, setMessage }: Props) {
+  const [data, setData] = useState<any>({ hotels: [], rooms: 0, bookings: 0, revenue: 0 })
+  const [loading, setLoading] = useState(true)
+  useEffect(() => { request('/hotel-admin/overview').then(setData).catch((error: any) => setMessage(error.message)).finally(() => setLoading(false)) }, [])
+  return <main className="hotel-admin-layout"><aside className="hotel-admin-sidebar"><p className="eyebrow">STAYGRID PARTNER</p><h1>Hotel admin</h1><p>{user?.business_name || 'Your hotel workspace'}</p><nav><button className="active">Overview</button><button onClick={() => setMessage('Room management is ready for hotel assignment.')}>Rooms & prices</button><button onClick={() => setMessage('Booking management is ready for hotel assignment.')}>Bookings</button><button onClick={() => setMessage('Reports will show hotel-specific revenue.')}>Reports</button></nav></aside><section className="hotel-admin-main"><p className="eyebrow">HOTEL OPERATIONS</p><h2>Welcome, {user?.name || 'partner'}</h2>{loading ? <p className="form-help">Loading hotel statistics…</p> : <><div className="hotel-admin-stats"><div><span>Hotels</span><strong>{data.hotels.length}</strong></div><div><span>Rooms</span><strong>{data.rooms}</strong></div><div><span>Bookings</span><strong>{data.bookings}</strong></div><div><span>Revenue</span><strong>₹{Number(data.revenue || 0).toLocaleString('en-IN')}</strong></div></div><section className="admin-panel-card"><p className="eyebrow">YOUR PROPERTIES</p><h3>Assigned hotels</h3>{data.hotels.length ? data.hotels.map((hotel: any) => <div className="admin-list-row" key={hotel.id}><div><b>{hotel.name}</b><small>{hotel.city} · {hotel.address}</small></div><span className="status">Active</span></div>) : <p className="form-help">No hotel has been assigned yet. Contact an administrator for approval and assignment.</p>}</section></>}</section></main>
+}

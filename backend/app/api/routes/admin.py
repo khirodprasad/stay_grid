@@ -24,9 +24,10 @@ def update_user_status(user_id: int, status: str, admin=Depends(admin_user), db=
 
 
 @router.post("/hotels", status_code=201, summary="Create a hotel")
-def create_hotel(payload: HotelInput, db=Depends(get_db)):
+def create_hotel(payload: HotelInput, admin=Depends(admin_user), db=Depends(get_db)):
     values = payload.model_dump()
-    cursor = db.execute("INSERT INTO hotels(name,description,address,city,country,contact,rating,amenities) VALUES(:name,:description,:address,:city,:country,:contact,:rating,:amenities)", values)
+    values["created_by"] = admin["id"]
+    cursor = db.execute("INSERT INTO hotels(name,description,address,city,country,contact,rating,amenities,created_by) VALUES(:name,:description,:address,:city,:country,:contact,:rating,:amenities,:created_by)", values)
     return dict(db.execute("SELECT * FROM hotels WHERE id=?", (cursor.lastrowid,)).fetchone())
 
 

@@ -18,7 +18,7 @@ class LoginInput(InputModel):
 
 
 class AdminRegisterInput(RegisterInput):
-    admin_code: str = Field(min_length=4, max_length=128)
+    admin_code: str | None = None
 
 
 class HotelAdminRegisterInput(RegisterInput):

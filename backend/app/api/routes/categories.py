@@ -11,7 +11,7 @@ COUNT_QUERIES = {
     "rooms": "SELECT COUNT(*) AS count FROM rooms WHERE status!='inactive'",
     "availability": "SELECT COUNT(*) AS count FROM rooms WHERE status='available'",
     "bookings": "SELECT COUNT(*) AS count FROM bookings",
-    "guests": "SELECT COUNT(*) AS count FROM users WHERE role='customer'",
+    "guests": "SELECT COUNT(*) AS count FROM users WHERE role='user'",
     "administration": "SELECT COUNT(*) AS count FROM users WHERE role='admin'",
 }
 

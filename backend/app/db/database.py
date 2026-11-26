@@ -101,6 +101,10 @@ def initialize_database() -> None:
         server.close()
 
     db = connect()
+    def ensure_column(table: str, column: str, definition: str) -> None:
+        exists = db.execute("SELECT 1 FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?", (MYSQL_DATABASE, table, column)).fetchone()
+        if not exists:
+            db.execute(f"ALTER TABLE `{table}` ADD COLUMN `{column}` {definition}")
     statements = [
         """CREATE TABLE IF NOT EXISTS roles (id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(30) NOT NULL UNIQUE, description VARCHAR(255) NOT NULL DEFAULT '') ENGINE=InnoDB""",
         """CREATE TABLE IF NOT EXISTS users (id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(120) NOT NULL, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, role ENUM('user','admin','hotel_admin') NOT NULL DEFAULT 'user', account_status ENUM('pending','active','suspended','blocked') NOT NULL DEFAULT 'active', approved_at DATETIME NULL, approved_by BIGINT NULL, business_name VARCHAR(180) NULL, phone VARCHAR(40) NULL, created_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, created_by BIGINT NULL, updated_by BIGINT NULL) ENGINE=InnoDB""",
@@ -115,6 +119,24 @@ def initialize_database() -> None:
     try:
         for statement in statements:
             db.execute(statement)
+        # Upgrade existing users before any seed/update statements reference new columns.
+        db.execute("ALTER TABLE users MODIFY role ENUM('customer','user','admin','hotel_admin') NOT NULL DEFAULT 'user'")
+        db.execute("UPDATE users SET role='user' WHERE role='customer'")
+        db.execute("ALTER TABLE users MODIFY role ENUM('user','admin','hotel_admin') NOT NULL DEFAULT 'user'")
+        ensure_column("users", "account_status", "ENUM('pending','active','suspended','blocked') NOT NULL DEFAULT 'active'")
+        ensure_column("users", "approved_at", "DATETIME NULL")
+        ensure_column("users", "approved_by", "BIGINT NULL")
+        ensure_column("users", "business_name", "VARCHAR(180) NULL")
+        ensure_column("users", "phone", "VARCHAR(40) NULL")
+        ensure_column("users", "created_date", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP")
+        ensure_column("users", "updated_date", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+        ensure_column("users", "created_by", "BIGINT NULL")
+        ensure_column("users", "updated_by", "BIGINT NULL")
+        ensure_column("users", "full_name", "VARCHAR(120) NULL")
+        ensure_column("users", "is_active", "BOOLEAN NOT NULL DEFAULT TRUE")
+        ensure_column("users", "created_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP")
+        ensure_column("users", "updated_at", "TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+        db.execute("UPDATE users SET full_name=COALESCE(NULLIF(full_name,''),name), is_active=IF(account_status IN ('blocked','suspended'),0,1), created_at=COALESCE(created_at,created_date), updated_at=COALESCE(updated_at,updated_date)")
         db.executemany("INSERT INTO roles(name,description) VALUES(%s,%s) ON DUPLICATE KEY UPDATE description=VALUES(description)", [
             ("user", "Guest account for browsing and booking stays"),
             ("admin", "Administrator account for managing StayGrid"),
@@ -131,24 +153,14 @@ def initialize_database() -> None:
         ]
         db.executemany("INSERT INTO categories(slug,name,description,count_source,sort_order) VALUES(%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE name=VALUES(name),description=VALUES(description),count_source=VALUES(count_source),sort_order=VALUES(sort_order)", category_rows)
         if ADMIN_EMAIL and ADMIN_PASSWORD:
-            db.execute("INSERT INTO users(name,email,password_hash,role,account_status,approved_at) VALUES(%s,%s,%s,'admin','active',NOW()) ON DUPLICATE KEY UPDATE email=email", ("StayGrid Admin", ADMIN_EMAIL.lower(), hash_password(ADMIN_PASSWORD)))
+            db.execute("DELETE FROM users WHERE email='admin@example.com' AND email<>%s", (ADMIN_EMAIL.lower(),))
+            db.execute("INSERT INTO users(name,email,password_hash,role,account_status,approved_at) VALUES(%s,%s,%s,'admin','active',NOW()) ON DUPLICATE KEY UPDATE name=VALUES(name),password_hash=VALUES(password_hash),role='admin',account_status='active',approved_at=NOW()", ("StayGrid Admin", ADMIN_EMAIL.lower(), hash_password(ADMIN_PASSWORD)))
         db.execute("INSERT IGNORE INTO user_roles(user_id,role_id) SELECT u.id,r.id FROM users u JOIN roles r ON r.name=u.role")
-        db.execute("UPDATE users SET role='user' WHERE role='customer'")
-        db.execute("ALTER TABLE users MODIFY role ENUM('user','admin','hotel_admin') NOT NULL DEFAULT 'user'")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status ENUM('pending','active','suspended','blocked') NOT NULL DEFAULT 'active'")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at DATETIME NULL")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by BIGINT NULL")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS business_name VARCHAR(180) NULL")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(40) NULL")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by BIGINT NULL")
-        db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_by BIGINT NULL")
         for table in ("hotels", "room_types", "rooms", "bookings", "categories", "password_reset_tokens"):
-            db.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS created_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP")
-            db.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS updated_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-            db.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS created_by BIGINT NULL")
-            db.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS updated_by BIGINT NULL")
+            ensure_column(table, "created_date", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP")
+            ensure_column(table, "updated_date", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+            ensure_column(table, "created_by", "BIGINT NULL")
+            ensure_column(table, "updated_by", "BIGINT NULL")
         db.execute("DROP TABLE IF EXISTS admins")
         db.commit()
     finally:
