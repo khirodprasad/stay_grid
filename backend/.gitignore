@@ -1,1 +1,10 @@
 .venv
+.venv-broken*/
+.venv-run/
+.env
+__pycache__/
+*.egg-info/
+*.py[cod]
+*.db
+*.db-shm
+*.db-wal

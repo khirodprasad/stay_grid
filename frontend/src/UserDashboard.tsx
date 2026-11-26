@@ -1,0 +1,5 @@
+type UserDashboardProps = { user: any; bookings: any[]; onExplore: () => void; onBookings: () => void }
+
+export default function UserDashboard({ user, bookings, onExplore, onBookings }: UserDashboardProps) {
+  return <main className="user-dashboard"><section className="user-welcome"><p className="eyebrow">YOUR STAYGRID ACCOUNT</p><h1>Welcome back, {user?.name || 'traveller'}.</h1><p>Keep your profile, reservations, and next escape in one place.</p><div><button className="gold" onClick={onExplore}>Explore stays →</button><button className="outline" onClick={onBookings}>View bookings</button></div></section><section className="user-role-card"><span className="avatar large">{user?.name?.[0] || 'U'}</span><div><p className="eyebrow">ACCOUNT ROLE</p><h2>{user?.role === 'admin' ? 'Administrator' : 'Guest'}</h2><p>{user?.email}</p></div></section><section className="user-summary"><div><span>Upcoming stays</span><strong>{bookings.filter((booking) => booking.status === 'confirmed').length}</strong></div><div><span>Total reservations</span><strong>{bookings.length}</strong></div><div><span>Account status</span><strong>Active</strong></div></section></main>
+}
